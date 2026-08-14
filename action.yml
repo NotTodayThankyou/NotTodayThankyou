@@ -1,4 +1,4 @@
-name: 'autoclose-PR'
+name: 'NotTodayThankyou'
 description: 'Checks the PR triggering the calling workflow meets quality checks.  If not, the PR is closed.'
 
 inputs:
