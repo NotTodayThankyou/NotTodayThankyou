@@ -1,33 +1,85 @@
-name: 'Verify Fork CI'
-description: 'Closes PRs if required workflows have not been executed on the contributor fork.'
+name: 'autoclose-PR'
+description: 'Checks the PR triggering the calling workflow meets quality checks.  If not, the PR is closed.'
+
 inputs:
-  github-token:
-    description: 'GitHub token with pull-requests: write permission'
-    required: true
-    default: ${{ github.token }}
-  head-repo:
-    description: 'Full name of the head repository (e.g. owner/repo)'
-    required: true
-    default: ${{ github.event.pull_request.head.repo.full_name }}
-  head-sha:
-    description: 'Commit SHA on the head repository'
-    required: true
-    default: ${{ github.event.pull_request.head.sha }}
-  pr-number:
-    description: 'The target Pull Request number'
-    required: true
-    default: ${{ github.event.pull_request.number }}
+  close-message:
+    description: 'Custom message to post on the PR when automatically closing it'
+    required: false
+    default: '❌ **PR Automatically Closed**: Workflows have not been executed on your fork. Please enable GitHub Actions on your fork, run your test suite, and reopen this PR.'
 
 runs:
   using: 'composite'
   steps:
-    - name: Run Fork Verification Script
-      shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        HEAD_REPO: ${{ inputs.head-repo }}
-        HEAD_SHA: ${{ inputs.head-sha }}
-        PR_NUMBER: ${{ inputs.pr-number }}
-      run: |
-        chmod +x "${{ github.action_path }}/check_PR_and_close_on_failure.sh"
-        "${{ github.action_path }}/check_PR_and_close_on_failure.sh"
+    - uses: actions/github-script@v9
+      with:
+        script: |
+          const pr = context.payload.pull_request;
+
+          // Ensure the workflow was triggered by a pull request event
+          if (!pr) {
+            core.setFailed('This action can only be run on pull_request or pull_request_target events.');
+            return;
+          }
+
+          // Read optional input message
+          const closeMessageInput = `${{ inputs.close-message }}`;
+
+          // Variables to track closure state and gather reason messages
+          let closePr = false;
+          let failureMessages = '';
+
+          const headRepoOwner = pr.head.repo.owner.login;
+          const headRepoName = pr.head.repo.name;
+          const headRepoFullName = pr.head.repo.full_name;
+          const headSha = pr.head.sha;
+          const prNumber = pr.number;
+
+          console.log(`Checking workflow runs for ${headRepoFullName} at commit ${headSha}...`);
+
+          // --- CHECK 1: Fork Workflow Executions ---
+          const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+            owner: headRepoOwner,
+            repo: headRepoName,
+            head_sha: headSha
+          });
+
+          if (data.total_count === 0) {
+            console.log(`❌ Check Failed: No workflow runs found on ${headRepoFullName} for commit ${headSha}.`);
+            closePr = true;
+            failureMessages += (failureMessages ? '\n\n' : '') + closeMessageInput;
+          } else {
+            console.log(`✅ Check Passed: Found ${data.total_count} workflow run(s) on ${headRepoFullName}.`);
+          }
+
+          // --- ADD FUTURE CHECKS HERE ---
+          // Example:
+          // if (someOtherCondition) {
+          //   closePr = true;
+          //   failureMessages += (failureMessages ? '\n\n' : '') + 'Another failure message...';
+          // }
+
+          // --- EVALUATE CLOSURE ---
+          if (!closePr) {
+            console.log('All checks passed. PR remains open.');
+            return;
+          }
+
+          // Post comment only if there is a message to post
+          if (failureMessages.trim().length > 0) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: failureMessages
+            });
+          }
+
+          // Close the PR
+          await github.rest.pulls.update({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber,
+            state: 'closed'
+          });
+
+          core.setFailed(`PR #${prNumber} automatically closed due to failed checks.`);
