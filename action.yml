@@ -2,69 +2,251 @@ name: 'autoclose-PR'
 description: 'Checks the PR triggering the calling workflow meets quality checks.  If not, the PR is closed.'
 
 inputs:
+  # Base inputs
   close-message:
-    description: 'Custom message to post on the PR when automatically closing it'
+    description: 'Custom message to post on the PR when automatically closing it for missing fork CI'
     required: false
     default: '❌ **PR Automatically Closed**: Workflows have not been executed on your fork. Please enable GitHub Actions on your fork, run your test suite, and reopen this PR.'
+
+  # (i) Allowlists & Contributors
+  allowed-authors:
+    description: 'Comma-separated list of GitHub usernames that bypass all checks'
+    required: false
+    default: ''
+
+  # (ii) External Username API Validation
+  author-validation-api-url:
+    description: 'REST API endpoint URL to validate the author username (e.g., https://api.example.com/check-user?username=). Fails check if API returns non-200 status or { "valid": false }.'
+    required: false
+    default: ''
+
+  # (iii) Rate Limiting / Spam Check
+  max-prs-per-day:
+    description: 'Maximum PRs created by author across GitHub in the last 24 hours before closing (-1 to disable)'
+    required: false
+    default: '-1'
+
+  # (iv) Associated Issue
+  require-associated-issue:
+    description: 'Close PR if no linked issue (e.g., Fixes #123) is detected in the PR body'
+    required: false
+    default: 'false'
+
+  # (v) Developer Certificate of Origin (DCO)
+  require-dco:
+    description: 'Close PR if DCO checkmark is not selected in PR body'
+    required: false
+    default: 'false'
+
+  # (vi) AI Tool Usage Declaration
+  require-ai-declaration:
+    description: 'Close PR if AI usage declaration checkmark is not selected in PR body'
+    required: false
+    default: 'false'
+
+  # (vii) CONTRIBUTIONS.md Acknowledgment
+  require-contributions-ack:
+    description: 'Close PR if CONTRIBUTIONS.md acknowledgment checkmark is not selected in PR body'
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
   steps:
-    - uses: actions/github-script@v9
+    - name: Run PR Checks, and possibly close it.
+      uses: actions/github-script@v9
       with:
         script: |
           const pr = context.payload.pull_request;
 
-          // Ensure the workflow was triggered by a pull request event
           if (!pr) {
             core.setFailed('This action can only be run on pull_request or pull_request_target events.');
             return;
           }
 
-          // Read optional input message
-          const closeMessageInput = `${{ inputs.close-message }}`;
-
-          // Variables to track closure state and gather reason messages
-          let closePr = false;
-          let failureMessages = '';
-
+          const author = pr.user.login;
+          const prBody = pr.body || '';
           const headRepoOwner = pr.head.repo.owner.login;
           const headRepoName = pr.head.repo.name;
           const headRepoFullName = pr.head.repo.full_name;
           const headSha = pr.head.sha;
           const prNumber = pr.number;
 
-          console.log(`Checking workflow runs for ${headRepoFullName} at commit ${headSha}...`);
+          // =========================================================================
+          // CHECK (i): ALLOWLIST & EXISTING CONTRIBUTOR BYPASS
+          // =========================================================================
+          const allowedAuthorsInput = `${{ inputs.allowed-authors }}`.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+          
+          if (allowedAuthorsInput.includes(author.toLowerCase())) {
+            console.log(`✅ Author '${author}' is explicitly in the allowlist. Bypassing all checks.`);
+            return;
+          }
 
-          // --- CHECK 1: Fork Workflow Executions ---
-          const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+          try {
+            // Query repo contributors
+            const { data: repositoryStats } = await github.rest.repos.getContributorStats({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+
+            const isContributor = Array.isArray(repositoryStats) && repositoryStats.some(c => c.author && c.author.login.toLowerCase() === author.toLowerCase());
+            
+            if (isContributor) {
+              console.log(`✅ Author '${author}' is an existing contributor to this repository. Bypassing all checks.`);
+              return;
+            }
+          } catch (err) {
+            console.log(`⚠️ Could not fetch contributor stats (${err.message}). Proceeding with checks.`);
+          }
+
+          // State tracking
+          let closePr = false;
+          let failureMessages = '';
+
+          // Helper to log and record failures
+          const failCheck = (reasonMsg, logMsg) => {
+            console.log(`❌ Check Failed: ${logMsg}`);
+            closePr = true;
+            failureMessages += (failureMessages ? '\n\n' : '') + reasonMsg;
+          };
+
+          // =========================================================================
+          // BASE CHECK: FORK WORKFLOW EXECUTIONS
+          // =========================================================================
+          const closeMessageInput = `${{ inputs.close-message }}`;
+          const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
             owner: headRepoOwner,
             repo: headRepoName,
             head_sha: headSha
           });
 
-          if (data.total_count === 0) {
-            console.log(`❌ Check Failed: No workflow runs found on ${headRepoFullName} for commit ${headSha}.`);
-            closePr = true;
-            failureMessages += (failureMessages ? '\n\n' : '') + closeMessageInput;
+          if (workflowRuns.total_count === 0) {
+            failCheck(closeMessageInput, `No workflow runs found on ${headRepoFullName} for commit ${headSha}.`);
           } else {
-            console.log(`✅ Check Passed: Found ${data.total_count} workflow run(s) on ${headRepoFullName}.`);
+            console.log(`✅ Check Passed: Found ${workflowRuns.total_count} workflow run(s) on ${headRepoFullName}.`);
           }
 
-          // --- ADD FUTURE CHECKS HERE ---
-          // Example:
-          // if (someOtherCondition) {
-          //   closePr = true;
-          //   failureMessages += (failureMessages ? '\n\n' : '') + 'Another failure message...';
-          // }
+          // =========================================================================
+          // CHECK (ii): REST API USERNAME VALIDATION
+          // =========================================================================
+          const apiUrl = `${{ inputs.author-validation-api-url }}`.trim();
+          if (apiUrl) {
+            try {
+              const fullUrl = `${apiUrl}${encodeURIComponent(author)}`;
+              const response = await fetch(fullUrl);
+              
+              if (response.ok) {
+                const json = await response.json().catch(() => ({}));
+                if (json.valid === false) {
+                  failCheck(
+                    '❌ **PR Closed**: Author username failed external verification policy.',
+                    `External API validation failed for author '${author}'.`
+                  );
+                } else {
+                  console.log(`✅ Check Passed: External API validated author '${author}'.`);
+                }
+              } else {
+                console.log(`⚠️ External API returned HTTP status ${response.status}. Skipping check as configured.`);
+              }
+            } catch (err) {
+              console.log(`⚠️ External REST API call failed (${err.message}). Doing nothing per configuration.`);
+            }
+          }
 
-          // --- EVALUATE CLOSURE ---
+          // =========================================================================
+          // CHECK (iii): RATE LIMITING / MAXIMUM PRs CREATED IN LAST 24 HOURS
+          // =========================================================================
+          const maxPrs = parseInt(`${{ inputs.max-prs-per-day }}`, 10);
+          if (maxPrs >= 0) {
+            try {
+              const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+              // Search for PRs authored across GitHub in the last day
+              const { data: searchResults } = await github.rest.search.issuesAndPullRequests({
+                q: `type:pr author:${author} created:>${oneDayAgo}`
+              });
+
+              if (searchResults.total_count > maxPrs) {
+                failCheck(
+                  `❌ **PR Closed**: You have opened ${searchResults.total_count} PRs across GitHub in the last 24 hours, exceeding the daily threshold of ${maxPrs}.`,
+                  `Author '${author}' exceeded rate limit (${searchResults.total_count}/${maxPrs} PRs created in 24h).`
+                );
+              } else {
+                console.log(`✅ Check Passed: Author '${author}' has created ${searchResults.total_count}/${maxPrs} PRs in 24h.`);
+              }
+            } catch (err) {
+              console.log(`⚠️ Failed to query global PR rate limit search (${err.message}).`);
+            }
+          }
+
+          // =========================================================================
+          // CHECK (iv): ASSOCIATED ISSUE
+          // =========================================================================
+          if (`${{ inputs.require-associated-issue }}` === 'true') {
+            const issueRegex = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#\d+/i;
+            if (!issueRegex.test(prBody)) {
+              failCheck(
+                '❌ **PR Closed**: This repository requires pull requests to link an associated issue (e.g. `Fixes #123` in the description).',
+                `No linked issue keyword found in PR body.`
+              );
+            } else {
+              console.log('✅ Check Passed: Associated issue declaration found.');
+            }
+          }
+
+          // =========================================================================
+          // CHECK (v): DEVELOPER CERTIFICATE OF ORIGIN (DCO)
+          // =========================================================================
+          if (`${{ inputs.require-dco }}` === 'true') {
+            const dcoRegex = /\[x\]\s*(i\s*agree\s*to\s*the\s*)?dco|developer\s*certificate\s*of\s*origin/i;
+            if (!dcoRegex.test(prBody)) {
+              failCheck(
+                '❌ **PR Closed**: You must confirm compliance with the Developer Certificate of Origin (DCO) by checking the required checkbox in your PR description.',
+                'DCO checkmark missing in PR description.'
+              );
+            } else {
+              console.log('✅ Check Passed: DCO declaration confirmed.');
+            }
+          }
+
+          // =========================================================================
+          // CHECK (vi): AI TOOL USAGE DECLARATION
+          // =========================================================================
+          if (`${{ inputs.require-ai-declaration }}` === 'true') {
+            const aiRegex = /\[x\]\s*.*(ai|llm|copilot|chatgpt)/i;
+            if (!aiRegex.test(prBody)) {
+              failCheck(
+                '❌ **PR Closed**: You must declare any AI tools used (or explicitly indicate none were used) by completing the checkbox in the PR description.',
+                'AI usage declaration checkmark missing.'
+              );
+            } else {
+              console.log('✅ Check Passed: AI tool usage declaration confirmed.');
+            }
+          }
+
+          // =========================================================================
+          // CHECK (vii): CONTRIBUTIONS.MD ACKNOWLEDGMENT
+          // =========================================================================
+          if (`${{ inputs.require-contributions-ack }}` === 'true') {
+            const contribRegex = /\[x\]\s*.*(read\s*and\s*understood|contributing|contributions\.md)/i;
+            if (!contribRegex.test(prBody)) {
+              failCheck(
+                '❌ **PR Closed**: You must acknowledge that you have read and understood `CONTRIBUTIONS.md` by marking the checkbox in the PR description.',
+                'CONTRIBUTIONS.md acknowledgment missing.'
+              );
+            } else {
+              console.log('✅ Check Passed: CONTRIBUTIONS.md acknowledgment confirmed.');
+            }
+          }
+
+          // =========================================================================
+          // FINAL EVALUATION & PR CLOSURE
+          // =========================================================================
           if (!closePr) {
-            console.log('All checks passed. PR remains open.');
+            console.log('🎉 All checks passed cleanly. PR remains open.');
             return;
           }
 
-          // Post comment only if there is a message to post
+          // Post composite comment if messages exist
           if (failureMessages.trim().length > 0) {
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -74,7 +256,7 @@ runs:
             });
           }
 
-          // Close the PR
+          // Close PR
           await github.rest.pulls.update({
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -82,4 +264,4 @@ runs:
             state: 'closed'
           });
 
-          core.setFailed(`PR #${prNumber} automatically closed due to failed checks.`);
+          core.setFailed(`PR #${prNumber} automatically closed due to failed requirement checks.`);
