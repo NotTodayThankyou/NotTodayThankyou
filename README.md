@@ -20,8 +20,5 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Verify Fork CI
-        uses: JamesParrott/autoclose-PR@v1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }} 
+      - uses: JamesParrott/autoclose-PR@v1
 ```
