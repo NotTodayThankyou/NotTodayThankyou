@@ -1,0 +1,33 @@
+name: 'Verify Fork CI'
+description: 'Closes PRs if required workflows have not been executed on the contributor fork.'
+inputs:
+  github-token:
+    description: 'GitHub token with pull-requests: write permission'
+    required: true
+    default: ${{ github.token }}
+  head-repo:
+    description: 'Full name of the head repository (e.g. owner/repo)'
+    required: true
+    default: ${{ github.event.pull_request.head.repo.full_name }}
+  head-sha:
+    description: 'Commit SHA on the head repository'
+    required: true
+    default: ${{ github.event.pull_request.head.sha }}
+  pr-number:
+    description: 'The target Pull Request number'
+    required: true
+    default: ${{ github.event.pull_request.number }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Fork Verification Script
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        HEAD_REPO: ${{ inputs.head-repo }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+      run: |
+        chmod +x "${{ github.action_path }}/check_PR_and_close_on_failure.sh"
+        "${{ github.action_path }}/check_PR_and_close_on_failure.sh"
