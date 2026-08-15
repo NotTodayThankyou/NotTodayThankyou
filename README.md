@@ -25,7 +25,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: JamesParrott/autoclose-PR@v1
+      - uses: NotTodayThankyou/NotTodayThankyou@v1
 ```
 
 ## AI Declaration

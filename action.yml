@@ -1,5 +1,5 @@
 name: 'NotTodayThankyou'
-description: 'Checks the PR triggering the calling workflow meets quality checks.  If not, the PR is closed.'
+description: 'Closes the PR triggering the calling workflow, unless it passes various checks.'
 
 inputs:
   # Base inputs
@@ -8,52 +8,33 @@ inputs:
     required: false
     default: '❌ **PR Automatically Closed**: Workflows have not been executed on your fork. Please enable GitHub Actions on your fork, run your test suite, and reopen this PR.'
 
+  post-comment:
+    description: 'Whether to post an explanatory comment on the PR before closing it'
+    required: false
+    default: 'true'
+
   # (i) Allowlists & Contributors
   allowed-authors:
     description: 'Comma-separated list of GitHub usernames that bypass all checks'
     required: false
     default: ''
 
-  # (ii) External Username API Validation
-  author-validation-api-url:
-    description: 'REST API endpoint URL to validate the author username (e.g., https://api.example.com/check-user?username=). Fails check if API returns non-200 status or { "valid": false }.'
-    required: false
-    default: ''
-
-  # (iii) Rate Limiting / Spam Check
+  # (ii) Rate Limiting / Spam Check
   max-prs-per-day:
     description: 'Maximum PRs created by author across GitHub in the last 24 hours before closing (-1 to disable)'
     required: false
     default: '-1'
 
-  # (iv) Associated Issue
+  # (iii) Associated Issue
   require-associated-issue:
-    description: 'Close PR if no linked issue (e.g., Fixes #123) is detected in the PR body'
-    required: false
-    default: 'false'
-
-  # (v) Developer Certificate of Origin (DCO)
-  require-dco:
-    description: 'Close PR if DCO checkmark is not selected in PR body'
-    required: false
-    default: 'false'
-
-  # (vi) AI Tool Usage Declaration
-  require-ai-declaration:
-    description: 'Close PR if AI usage declaration checkmark is not selected in PR body'
-    required: false
-    default: 'false'
-
-  # (vii) CONTRIBUTIONS.md Acknowledgment
-  require-contributions-ack:
-    description: 'Close PR if CONTRIBUTIONS.md acknowledgment checkmark is not selected in PR body'
+    description: 'Close PR if no linked issue is found via GitHub closing references or timeline cross-references'
     required: false
     default: 'false'
 
 runs:
   using: 'composite'
   steps:
-    - name: Run PR Checks, and possibly close it.
+    - name: Run PR Verification Logic
       uses: actions/github-script@v9
       with:
         script: |
@@ -65,7 +46,6 @@ runs:
           }
 
           const author = pr.user.login;
-          const prBody = pr.body || '';
           const headRepoOwner = pr.head.repo.owner.login;
           const headRepoName = pr.head.repo.name;
           const headRepoFullName = pr.head.repo.full_name;
@@ -127,34 +107,7 @@ runs:
           }
 
           // =========================================================================
-          // CHECK (ii): REST API USERNAME VALIDATION
-          // =========================================================================
-          const apiUrl = `${{ inputs.author-validation-api-url }}`.trim();
-          if (apiUrl) {
-            try {
-              const fullUrl = `${apiUrl}${encodeURIComponent(author)}`;
-              const response = await fetch(fullUrl);
-              
-              if (response.ok) {
-                const json = await response.json().catch(() => ({}));
-                if (json.valid === false) {
-                  failCheck(
-                    '❌ **PR Closed**: Author username failed external verification policy.',
-                    `External API validation failed for author '${author}'.`
-                  );
-                } else {
-                  console.log(`✅ Check Passed: External API validated author '${author}'.`);
-                }
-              } else {
-                console.log(`⚠️ External API returned HTTP status ${response.status}. Skipping check as configured.`);
-              }
-            } catch (err) {
-              console.log(`⚠️ External REST API call failed (${err.message}). Doing nothing per configuration.`);
-            }
-          }
-
-          // =========================================================================
-          // CHECK (iii): RATE LIMITING / MAXIMUM PRs CREATED IN LAST 24 HOURS
+          // CHECK (ii): RATE LIMITING / MAXIMUM PRs CREATED IN LAST 24 HOURS
           // =========================================================================
           const maxPrs = parseInt(`${{ inputs.max-prs-per-day }}`, 10);
           if (maxPrs >= 0) {
@@ -179,62 +132,64 @@ runs:
           }
 
           // =========================================================================
-          // CHECK (iv): ASSOCIATED ISSUE
+          // CHECK (iii): ASSOCIATED ISSUE (GRAPHQL QUERY)
           // =========================================================================
           if (`${{ inputs.require-associated-issue }}` === 'true') {
-            const issueRegex = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#\d+/i;
-            if (!issueRegex.test(prBody)) {
-              failCheck(
-                '❌ **PR Closed**: This repository requires pull requests to link an associated issue (e.g. `Fixes #123` in the description).',
-                `No linked issue keyword found in PR body.`
-              );
-            } else {
-              console.log('✅ Check Passed: Associated issue declaration found.');
-            }
-          }
+            try {
+              const query = `
+                query($owner: String!, $repo: String!, $prNumber: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    pullRequest(number: $prNumber) {
+                      closingIssuesReferences(first: 5) {
+                        totalCount
+                      }
+                      timelineItems(first: 25, itemTypes: [CONNECTED_EVENT, CROSS_REFERENCED_EVENT]) {
+                        nodes {
+                          ... on ConnectedEvent {
+                            subject {
+                              __typename
+                              ... on Issue { number }
+                            }
+                          }
+                          ... on CrossReferencedEvent {
+                            source {
+                              __typename
+                              ... on Issue { number }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
 
-          // =========================================================================
-          // CHECK (v): DEVELOPER CERTIFICATE OF ORIGIN (DCO)
-          // =========================================================================
-          if (`${{ inputs.require-dco }}` === 'true') {
-            const dcoRegex = /\[x\]\s*(i\s*agree\s*to\s*the\s*)?dco|developer\s*certificate\s*of\s*origin/i;
-            if (!dcoRegex.test(prBody)) {
-              failCheck(
-                '❌ **PR Closed**: You must confirm compliance with the Developer Certificate of Origin (DCO) by checking the required checkbox in your PR description.',
-                'DCO checkmark missing in PR description.'
-              );
-            } else {
-              console.log('✅ Check Passed: DCO declaration confirmed.');
-            }
-          }
+              const gqlResult = await github.graphql(query, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                prNumber: prNumber
+              });
 
-          // =========================================================================
-          // CHECK (vi): AI TOOL USAGE DECLARATION
-          // =========================================================================
-          if (`${{ inputs.require-ai-declaration }}` === 'true') {
-            const aiRegex = /\[x\]\s*.*(ai|llm|copilot|chatgpt)/i;
-            if (!aiRegex.test(prBody)) {
-              failCheck(
-                '❌ **PR Closed**: You must declare any AI tools used (or explicitly indicate none were used) by completing the checkbox in the PR description.',
-                'AI usage declaration checkmark missing.'
-              );
-            } else {
-              console.log('✅ Check Passed: AI tool usage declaration confirmed.');
-            }
-          }
+              const prData = gqlResult.repository?.pullRequest;
+              const closingIssuesCount = prData?.closingIssuesReferences?.totalCount || 0;
 
-          // =========================================================================
-          // CHECK (vii): CONTRIBUTIONS.MD ACKNOWLEDGMENT
-          // =========================================================================
-          if (`${{ inputs.require-contributions-ack }}` === 'true') {
-            const contribRegex = /\[x\]\s*.*(read\s*and\s*understood|contributing|contributions\.md)/i;
-            if (!contribRegex.test(prBody)) {
-              failCheck(
-                '❌ **PR Closed**: You must acknowledge that you have read and understood `CONTRIBUTIONS.md` by marking the checkbox in the PR description.',
-                'CONTRIBUTIONS.md acknowledgment missing.'
-              );
-            } else {
-              console.log('✅ Check Passed: CONTRIBUTIONS.md acknowledgment confirmed.');
+              // Check timeline for non-closing issue references (ConnectedEvent or CrossReferencedEvent)
+              const hasTimelineIssueReference = prData?.timelineItems?.nodes?.some(node => {
+                const isConnectedIssue = node.subject?.__typename === 'Issue';
+                const isCrossReferencedIssue = node.source?.__typename === 'Issue';
+                return isConnectedIssue || isCrossReferencedIssue;
+              }) || false;
+
+              if (closingIssuesCount === 0 && !hasTimelineIssueReference) {
+                failCheck(
+                  '❌ **PR Closed**: This repository requires pull requests to be linked to an associated issue.',
+                  'No linked issue found via closingIssuesReferences or timelineItems cross-references.'
+                );
+              } else {
+                console.log(`✅ Check Passed: Linked issue connection confirmed (Closing references: ${closingIssuesCount}, Timeline reference: ${hasTimelineIssueReference}).`);
+              }
+            } catch (err) {
+              console.log(`⚠️ GraphQL query failed (${err.message}). Proceeding with precautions.`);
             }
           }
 
@@ -246,8 +201,9 @@ runs:
             return;
           }
 
-          // Post composite comment if messages exist
-          if (failureMessages.trim().length > 0) {
+          // Post comment based explicitly on the post-comment input setting
+          const shouldPostComment = `${{ inputs.post-comment }}` === 'true';
+          if (shouldPostComment && failureMessages.trim().length > 0) {
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
