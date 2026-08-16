@@ -61,7 +61,8 @@ jobs:
       - name: Update Target Repo Workflow Configuration
         uses: actions/github-script@v9
         with:
-          github-token: ${{ secrets.TARGET_REPO_CLASSIC }}
+          # Needs workflow scope as well as contents 
+          github-token: ${{ secrets.TARGET_REPO_PAT }}
           script: |
             const updateWorkflow = require('./.github/test_scripts/update-workflow.js');
             await updateWorkflow({ github, inputs: ${{ toJson(inputs) }} });
