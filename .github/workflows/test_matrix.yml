@@ -34,8 +34,8 @@ jobs:
   test:
     needs: user_authorization_check
     strategy:
+      max-parallel: 1
       matrix:
-        max-parallel: [1]
         settings: 
           # test PR that didn't run workflows gets closed
           - allowed-authors: ''
