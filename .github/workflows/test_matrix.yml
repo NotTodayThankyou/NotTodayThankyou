@@ -4,7 +4,35 @@ on:
   workflow_dispatch:
     
 jobs:
+  user_authorization_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure user instigating the workflow owns the org that owns the repo.
+        uses: actions/github-script@v9
+        with:
+          # Organization permissions: Read access to members 
+          github-token: ${{ secrets.READ_ORG_MEMBERS_PAT }}
+          script: |
+            const org = context.repo.owner;
+            const username = context.actor;
+
+            try {
+            const { data: membership } = await github.rest.orgs.getMembershipForUser({
+              org: org,
+              username: username
+            });
+
+            if (membership.role === 'admin' && membership.state === 'active') {
+              console.log(`✅ User ${username} is an active Owner (admin) of ${org}.`);
+            } else {
+              core.setFailed(`❌ User ${username} is not an owner of ${org}. Role: ${membership.role}`);
+            }
+            } catch (err) {
+              core.setFailed(`Failed to verify org membership for ${username}: ${err.message}`);
+            }
+
   test-scenario-bypass-allowlist:
+    needs: user_authorization_check
     uses: ./.github/workflows/parametrisable_test.yml
     with:
       target-owner: 'NotTodayThankyou'
@@ -13,6 +41,4 @@ jobs:
       expected-pr-open: true
       expected-comment-added: false
       cleanup-fork: false
-    secrets:
-      MACHINE_ACCOUNT_PAT: ${{ secrets.MACHINE_ACCOUNT_PAT }}
-      TARGET_REPO_PAT: ${{ secrets.TARGET_REPO_PAT }}
+    secrets: inherit
