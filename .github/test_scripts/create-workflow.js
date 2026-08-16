@@ -6,8 +6,9 @@ module.exports = async ({ github, inputs }) => {
   let parsed;
   try {
     parsed = JSON.parse(actionsInput);
-  catch (error) {
+  } catch (error) {
     console.log(`Could not parse: ${actionsInput}`, error.message);
+    parsed = {};
     throw error;
   }
   let withBlock;
