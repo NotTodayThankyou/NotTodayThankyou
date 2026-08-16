@@ -27,7 +27,7 @@ module.exports = async ({ github, context, core, inputs }) => {
   }
 
   try {
-    const { data: repositoryStats } = await github.rest.repos.getContributorStats({
+    const { data: repositoryStats } = await github.rest.repos.getContributorsStats({
       owner: context.repo.owner,
       repo: context.repo.repo
     });
