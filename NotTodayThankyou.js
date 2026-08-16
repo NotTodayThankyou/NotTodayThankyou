@@ -177,5 +177,6 @@ module.exports = async ({ github, context, core, inputs }) => {
     state: 'closed'
   });
 
-  core.setFailed(`PR #${prNumber} automatically closed due to failed requirement checks.`);
+  console.log(`PR #${prNumber} automatically closed due to failed requirement checks.`);
+  return;
 };
