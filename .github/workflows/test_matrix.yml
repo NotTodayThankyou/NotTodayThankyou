@@ -1,6 +1,7 @@
 name: Tests for NotTodayThankyou
 
 on:
+  push:
   workflow_dispatch:
     
 jobs:
@@ -37,18 +38,24 @@ jobs:
       max-parallel: 1
       matrix:
         settings: 
-          # test PR that didn't run workflows gets closed
+          # # test allowlist shortcut
+          # - allowed-authors: 'JamesParrott-machine-account'
+          #   enable-fork-actions: false
+          #   expected-pr-open: true
+          #   expected-comment-added: false
+          #   cleanup-fork: true
+          # # test PR that didn't run workflows gets closed
+          # - allowed-authors: ''
+          #   enable-fork-actions: false
+          #   expected-pr-open: false
+          #   expected-comment-added: true
+          #   cleanup-fork: true
+          # test PR that did run workflows remains open
           - allowed-authors: ''
-            enable-fork-actions: false
+            enable-fork-actions: true
             expected-pr-open: false
-            expected-comment-added: true
-            cleanup-fork: true
-          # test allowlist shortcut
-          - allowed-authors: 'JamesParrott-machine-account'
-            enable-fork-actions: false
-            expected-pr-open: true
             expected-comment-added: false
-            cleanup-fork: true
+            cleanup-fork: false
         
       
     uses: ./.github/workflows/parametrisable_test.yml
