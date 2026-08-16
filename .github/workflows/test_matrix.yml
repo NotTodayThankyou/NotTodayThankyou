@@ -33,12 +33,21 @@ jobs:
 
   test-scenario-bypass-allowlist:
     needs: user_authorization_check
+    strategy:
+      matrix:
+        max-parallel: [1]
+        settings: 
+          - expected-pr-open: true
+            expected-comment-added: false
+            cleanup-fork: false
+        
+      
     uses: ./.github/workflows/parametrisable_test.yml
     with:
       target-owner: 'NotTodayThankyou'
       target-repo: '__dummy_test_repo'
       allowed-authors: 'JamesParrott-machine-account'
-      expected-pr-open: true
-      expected-comment-added: false
-      cleanup-fork: false
+      expected-pr-open: ${{ matrix.settings.expected-pr-open }}
+      expected-comment-added: ${{ matrix.settings.expected-comment-added }}
+      cleanup-fork: ${{ matrix.settings.cleanup-fork }}
     secrets: inherit
