@@ -124,7 +124,7 @@ jobs:
 
 
 
-        
+
     name: ${{ matrix.settings.name }}
     uses: ./.github/workflows/parametrisable_test.yml
     with:
@@ -135,4 +135,18 @@ jobs:
       expected-pr-open: ${{ matrix.params.expected-pr-open }}
       expected-comment-added: ${{ matrix.params.expected-comment-added }}
       cleanup-fork: ${{ matrix.params.cleanup-fork }}
+    secrets: inherit
+
+  test_PR_from_contributor:
+    needs: user_authorization_check
+    name: Test PR left open if author is already a contributor
+    uses: ./.github/workflows/parametrisable_test.yml
+    with:
+      target-owner: 'NotTodayThankyou'
+      target-repo: '__dummy_repo_for_machine_account_to_be_contributor_of'
+      action-inputs: "{}"
+      enable-fork-actions: false
+      expected-pr-open: true
+      expected-comment-added: false
+      cleanup-fork: true
     secrets: inherit
