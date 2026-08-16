@@ -40,13 +40,13 @@ jobs:
         params: 
           - name: Test PRs not closed whose author is on allowlist
             action-inputs: {
-              allowed-authors: 'JamesParrott-machine-account'
+              allowed-authors: 'JamesParrott-machine-account',
+              max-prs-per-day: "0",
             }
             enable-fork-actions: false
             expected-pr-open: true
             expected-comment-added: false
             cleanup-fork: true
-
 
           - name: Test PR that didn't run workflows gets closed with a comment
             action-inputs: {}
@@ -80,6 +80,15 @@ jobs:
             }
             enable-fork-actions: true
             expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
+
+          - name: Test PR left open if max number of PRs set, but not exceeded
+            action-inputs: {
+              max-prs-per-day: "86400", # Number of seconds in 24 hours
+            }
+            enable-fork-actions: true
+            expected-pr-open: true
             expected-comment-added: true
             cleanup-fork: true
 
