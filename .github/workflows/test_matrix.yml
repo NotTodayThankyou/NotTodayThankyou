@@ -89,7 +89,7 @@ jobs:
     with:
       target-owner: 'NotTodayThankyou'
       target-repo: '__dummy_test_repo'
-      action-inputs: ${{ toJSON(matrix.params.action-inputs) }}
+      action-inputs: ${{ toJson(matrix.params.action-inputs) }}
       enable-fork-actions: ${{ matrix.params.enable-fork-actions }}
       expected-pr-open: ${{ matrix.params.expected-pr-open }}
       expected-comment-added: ${{ matrix.params.expected-comment-added }}
