@@ -38,26 +38,44 @@ jobs:
       max-parallel: 1
       matrix:
         settings: 
-          # # test allowlist shortcut
-          # - allowed-authors: 'JamesParrott-machine-account'
-          #   enable-fork-actions: false
-          #   expected-pr-open: true
-          #   expected-comment-added: false
-          #   cleanup-fork: true
-          # # test PR that didn't run workflows gets closed
-          # - allowed-authors: ''
-          #   enable-fork-actions: false
-          #   expected-pr-open: false
-          #   expected-comment-added: true
-          #   cleanup-fork: true
-          # test PR that did run workflows remains open
-          - allowed-authors: ''
-            enable-fork-actions: true
+          - name: Test PRs not closed whose author is on allowlist 
+            allowed-authors: 'JamesParrott-machine-account'
+            enable-fork-actions: false
+            expected-pr-open: true
+            expected-comment-added: false
+            cleanup-fork: true
+
+          - name: Test PR that didn't run workflows gets closed with a comment
+            allowed-authors: ""
+            enable-fork-actions: false
+            expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
+
+          - name: Test PR that didn't run workflows gets closed without a comment
+            allowed-authors: ""
+            post-comment: 'false'
+            enable-fork-actions: false
             expected-pr-open: false
             expected-comment-added: false
-            cleanup-fork: false
+            cleanup-fork: true
+
+          - name: Test PR that did run workflows remains open
+            allowed-authors: ""
+            enable-fork-actions: true
+            expected-pr-open: true
+            expected-comment-added: false
+            cleanup-fork: true
+
+          - name: Test PR closed if max number of PRs (0) set, and exceeded
+            allowed-authors: ""
+            max-prs-per-day: "0"
+            enable-fork-actions: true
+            expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
         
-      
+    name: ${{ matrix.settings.name }}
     uses: ./.github/workflows/parametrisable_test.yml
     with:
       target-owner: 'NotTodayThankyou'
