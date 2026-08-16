@@ -101,6 +101,16 @@ jobs:
             expected-comment-added: true
             cleanup-fork: true
 
+          - name: Test PR left open if it claims to close an issue
+            action-inputs: {
+              require-associated-issue: "true",
+            }
+            pr-body-content: "Closes: #5 \n"
+            enable-fork-actions: true
+            expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
+
 
 
         

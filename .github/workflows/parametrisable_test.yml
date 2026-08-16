@@ -21,6 +21,10 @@ on:
         required: false
         type: boolean
         default: false
+      pr-body-content:
+        required: false
+        type: string
+        default: ""
       expected-pr-open:
         required: true
         type: boolean
