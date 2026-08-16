@@ -18,7 +18,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: NotTodayThankyou/NotTodayThankyou@v1
+      - uses: NotTodayThankyou/NotTodayThankyou@main
         with:
           close-message: "${inputs['close-message']}"
           post-comment: "${inputs['post-comment']}"

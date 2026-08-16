@@ -31,13 +31,15 @@ jobs:
               core.setFailed(`Failed to verify org membership for ${username}: ${err.message}`);
             }
 
-  test-scenario-bypass-allowlist:
+  run_tests:
     needs: user_authorization_check
     strategy:
       matrix:
         max-parallel: [1]
         settings: 
-          - expected-pr-open: true
+          # test allowlist shortcut
+          - allowed-authors: 'JamesParrott-machine-account'
+            expected-pr-open: true
             expected-comment-added: false
             cleanup-fork: false
         
@@ -46,7 +48,7 @@ jobs:
     with:
       target-owner: 'NotTodayThankyou'
       target-repo: '__dummy_test_repo'
-      allowed-authors: 'JamesParrott-machine-account'
+      allowed-authors: ${{ matrix.settings.allowed-authors }}
       expected-pr-open: ${{ matrix.settings.expected-pr-open }}
       expected-comment-added: ${{ matrix.settings.expected-comment-added }}
       cleanup-fork: ${{ matrix.settings.cleanup-fork }}
