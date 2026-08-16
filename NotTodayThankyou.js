@@ -96,7 +96,7 @@ module.exports = async ({ github, context, core, inputs }) => {
   // =========================================================================
   // CHECK (iii): ASSOCIATED ISSUE (GRAPHQL QUERY)
   // =========================================================================
-  if (String(inputs['require-associated-issue']) === 'true') {
+  if (String(inputs['require-associated-issue']).toLowerCase() === 'true') {
     try {
       const query = `
         query($owner: String!, $repo: String!, $prNumber: Int!) {

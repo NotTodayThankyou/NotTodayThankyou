@@ -92,6 +92,17 @@ jobs:
             expected-comment-added: false
             cleanup-fork: true
 
+          - name: Test PR closed if it has no associated issue
+            action-inputs: {
+              require-associated-issue: "true",
+            }
+            enable-fork-actions: true
+            expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
+
+
+
         
     name: ${{ matrix.settings.name }}
     uses: ./.github/workflows/parametrisable_test.yml
