@@ -1,8 +1,11 @@
 module.exports = async ({ github, inputs }) => {
   const owner = inputs['target-owner'];
   const repo = inputs['target-repo'];
-  const path = '.github/workflows/NotTodayThankyou.yml';
-
+  const path = inputs['workflow-path'];
+  const actionsInputs = JSON.parse(inputs['actions-inputs']);
+  const withInputs = Object.entries(obj)
+                       .map(([key, val]) => `${key}: "${val}"`)
+                       .join('\n          '); // 10 spaces for correct YAML indentation level
   const updatedWorkflowContent = `name: Close PRs from Forks that didn't run CI
 
 on:
@@ -20,11 +23,7 @@ jobs:
     steps:
       - uses: NotTodayThankyou/NotTodayThankyou@main
         with:
-          close-message: "${inputs['close-message']}"
-          post-comment: "${inputs['post-comment']}"
-          allowed-authors: "${inputs['allowed-authors']}"
-          max-prs-per-day: "${inputs['max-prs-per-day']}"
-          require-associated-issue: "${inputs['require-associated-issue']}"
+          ${withInputs}
 `;
 
   let sha;

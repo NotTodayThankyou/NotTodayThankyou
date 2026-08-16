@@ -1,5 +1,5 @@
 module.exports = async ({ github, forkOwner, forkRepo }) => {
-  console.log(`Cleaning up fork ${forkOwner}/${forkRepo}...`);
+  console.log(`Deleting fork ${forkOwner}/${forkRepo}...`);
   try {
     await github.rest.repos.delete({
       owner: forkOwner,

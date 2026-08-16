@@ -9,30 +9,14 @@ on:
       target-repo:
         required: true
         type: string
-      close-message:
+      workflow-path:
         required: false
         type: string
-        default: '❌ **PR Automatically Closed**: Workflows have not been executed on your fork.'
-      post-comment:
-        required: false
-        type: boolean
-        default: true
-      allowed-authors:
+        default: '.github/workflows/NotTodayThankyou.yml'
+      action-inputs:
         required: false
         type: string
         default: ''
-      max-prs-per-day:
-        required: false
-        type: string
-        default: '-1'
-      require-associated-issue:
-        required: false
-        type: boolean
-        default: false
-      pr-body-content:
-        required: false
-        type: string
-        default: 'Automated test PR body'
       enable-fork-actions:
         required: false
         type: boolean
@@ -58,13 +42,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Update Target Repo Workflow Configuration
+      - name: Create Target Repo Workflow
         uses: actions/github-script@v9
         with:
           # Needs workflow scope as well as contents 
           github-token: ${{ secrets.TARGET_REPO_PAT }}
           script: |
-            const updateWorkflow = require('./.github/test_scripts/update-workflow.js');
+            const updateWorkflow = require('./.github/test_scripts/create-workflow.js');
             await updateWorkflow({ github, inputs: ${{ toJson(inputs) }} });
 
       - name: Fork, Commit, and Raise PR
@@ -85,13 +69,22 @@ jobs:
             const prNumber = parseInt('${{ steps.create-pr.outputs.pr_number }}', 10);
             await verifyAssertions({ github, core, inputs: ${{ toJson(inputs) }}, prNumber });
 
-      - name: Cleanup Fork Repository
+      - name: Delete Fork Repository
         if: always() && inputs.cleanup-fork == true && steps.create-pr.outputs.fork_owner != ''
         uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.MACHINE_ACCOUNT_CLASSIC }}
           script: |
-            const cleanupFork = require('./.github/test_scripts/cleanup-fork.js');
+            const cleanupFork = require('./.github/test_scripts/delete-fork.js');
             const forkOwner = '${{ steps.create-pr.outputs.fork_owner }}';
             const forkRepo = '${{ steps.create-pr.outputs.fork_repo }}';
             await cleanupFork({ github, forkOwner, forkRepo });
+
+      - name: Delete Target Repo Workflow
+        uses: actions/github-script@v9
+        with:
+          # Needs workflow scope as well as contents 
+          github-token: ${{ secrets.TARGET_REPO_PAT }}
+          script: |
+            const updateWorkflow = require('./.github/test_scripts/delete-workflow.js');
+            await updateWorkflow({ github, inputs: ${{ toJson(inputs) }} });
