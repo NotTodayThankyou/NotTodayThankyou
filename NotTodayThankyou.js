@@ -57,16 +57,27 @@ module.exports = async ({ github, context, core, inputs }) => {
   // BASE CHECK: FORK WORKFLOW EXECUTIONS
   // =========================================================================
   const closeMessageInput = inputs['close-message'];
-  const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
+  const permissions = await github.rest.actions.getGithubActionsPermissionsRepository({
     owner: headRepoOwner,
     repo: headRepoName,
-    head_sha: headSha
   });
-
-  if (workflowRuns.total_count === 0) {
-    failCheck(closeMessageInput, `No workflow runs found on ${headRepoFullName} for commit ${headSha}.`);
+  console.log('Actions Enabled:', permissions.data.enabled);
+  console.log('Allowed Actions Policy:', permissions.data.allowed_actions);
+  if (!permissions.data.enabled) {
+    failCheck(closeMessageInput, `Workflows not enabled on ${headRepoFullName}.`);
   } else {
-    console.log(`✅ Check Passed: Found ${workflowRuns.total_count} workflow run(s) on ${headRepoFullName}.`);
+    console.log(`✅ Check Passed: Workflows enabled: ${permissions.data.enabled} on ${headRepoFullName}.`);
+    const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
+      owner: headRepoOwner,
+      repo: headRepoName,
+      head_sha: headSha
+    });
+
+    if (workflowRuns.total_count === 0) {
+      failCheck(closeMessageInput, `No workflow runs found on ${headRepoFullName} for commit ${headSha}.`);
+    } else {
+      console.log(`✅ Check Passed: Found ${workflowRuns.total_count} workflow run(s) on ${headRepoFullName}.`);
+    }
   }
 
   // =========================================================================
