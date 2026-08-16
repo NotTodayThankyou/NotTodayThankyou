@@ -2,12 +2,17 @@ module.exports = async ({ github, inputs }) => {
   const owner = inputs['target-owner'];
   const repo = inputs['target-repo'];
   const path = inputs['workflow-path'];
-  const actionsInput = JSON.parse(inputs['actions-inputs'], (key, value) => {
-    return value ?? '';
-  });
-  const withInputs = Object.entries(obj)
-                       .map(([key, val]) => `${key}: "${val}"`)
-                       .join('\n          '); // 10 spaces for correct YAML indentation level
+  const actionsInput = JSON.parse(inputs['actions-inputs']);
+
+  let withBlock;
+  if (Object.keys(actionsInput).length === 0) {
+    withBlock = "";
+  } else {
+    withBlock = `with:
+          `; // 10 spaces
+    withBlock += Object.entries(actionsInput)
+                        .map(([key, val]) => `${key}: "${val}"`)
+                        .join('\n          '); // 10 spaces for correct YAML indentation level
   const updatedWorkflowContent = `name: Close PRs from Forks that didn't run CI
 
 on:
@@ -24,8 +29,7 @@ jobs:
       contents: read
     steps:
       - uses: NotTodayThankyou/NotTodayThankyou@main
-        with:
-          ${withInputs}
+        ${withBlock}
 `;
 
   let sha;
