@@ -13,6 +13,7 @@ module.exports = async ({ github, inputs }) => {
     withBlock += Object.entries(actionsInput)
                         .map(([key, val]) => `${key}: "${val}"`)
                         .join('\n          '); // 10 spaces for correct YAML indentation level
+  }
   const updatedWorkflowContent = `name: Close PRs from Forks that didn't run CI
 
 on:
