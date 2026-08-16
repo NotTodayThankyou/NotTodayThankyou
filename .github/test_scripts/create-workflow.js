@@ -2,17 +2,23 @@ module.exports = async ({ github, inputs }) => {
   const owner = inputs['target-owner'];
   const repo = inputs['target-repo'];
   const path = inputs['workflow-path'];
-  const actionsInput = JSON.parse(inputs['actions-inputs']);
-
+  const actionsInput = inputs['actions-inputs'];
+  let parsed;
+  try {
+    parsed = JSON.parse(actionsInput);
+  catch (error) {
+    console.log(`Could not parse: ${actionsInput}`, error.message);
+    throw error;
+  }
   let withBlock;
-  if (Object.keys(actionsInput).length === 0) {
+  if (Object.keys(parsed).length === 0) {
     withBlock = "";
   } else {
     withBlock = `with:
           `; // 10 spaces
-    withBlock += Object.entries(actionsInput)
-                        .map(([key, val]) => `${key}: "${val}"`)
-                        .join('\n          '); // 10 spaces for correct YAML indentation level
+    withBlock += Object.entries(parsed)
+                       .map(([key, val]) => `${key}: "${val}"`)
+                       .join('\n          '); // 10 spaces for correct YAML indentation level
   }
   const updatedWorkflowContent = `name: Close PRs from Forks that didn't run CI
 

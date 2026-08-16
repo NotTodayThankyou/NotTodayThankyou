@@ -58,7 +58,7 @@ jobs:
 
           - name: Test PR that didn't run workflows gets closed without a comment
             action-inputs: {
-              post-comment: 'false'
+              post-comment: 'false',
             }
             enable-fork-actions: false
             expected-pr-open: false
@@ -76,7 +76,7 @@ jobs:
 
           - name: Test PR closed if max number of PRs set, and exceeded
             action-inputs: {
-              max-prs-per-day: "0"
+              max-prs-per-day: "0",
             }
             enable-fork-actions: true
             expected-pr-open: false
