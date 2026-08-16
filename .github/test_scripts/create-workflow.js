@@ -2,7 +2,9 @@ module.exports = async ({ github, inputs }) => {
   const owner = inputs['target-owner'];
   const repo = inputs['target-repo'];
   const path = inputs['workflow-path'];
-  const actionsInputs = JSON.parse(inputs['actions-inputs']);
+  const actionsInput = JSON.parse(inputs['actions-inputs'], (key, value) => {
+    return value ?? '';
+  });
   const withInputs = Object.entries(obj)
                        .map(([key, val]) => `${key}: "${val}"`)
                        .join('\n          '); // 10 spaces for correct YAML indentation level
