@@ -2,7 +2,7 @@ module.exports = async ({ github, inputs }) => {
   const owner = inputs['target-owner'];
   const repo = inputs['target-repo'];
   const path = inputs['workflow-path'];
-  const actionsInput = inputs['actions-inputs'];
+  const actionsInput = inputs['action-inputs'];
   let parsed;
   try {
     parsed = JSON.parse(actionsInput);
