@@ -1,0 +1,18 @@
+name: Tests for NotTodayThankyou
+
+on:
+  workflow_dispatch:
+    
+jobs:
+  test-scenario-bypass-allowlist:
+    uses: ./.github/workflows/parametrisable_test.yml
+    with:
+      target-owner: 'NotTodayThankyou'
+      target-repo: '__dummy_test_repo'
+      allowed-authors: 'JamesParrott-machine-account'
+      expected-pr-open: true
+      expected-comment-added: false
+      cleanup-fork: false
+    secrets:
+      MACHINE_ACCOUNT_PAT: ${{ secrets.MACHINE_ACCOUNT_PAT }}
+      TARGET_REPO_PAT: ${{ secrets.TARGET_REPO_PAT }}

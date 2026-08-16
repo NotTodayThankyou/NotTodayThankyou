@@ -1,0 +1,98 @@
+name: Parametrisable Test
+
+on:
+  workflow_call:
+    inputs:
+      target-owner:
+        required: true
+        type: string
+      target-repo:
+        required: true
+        type: string
+      close-message:
+        required: false
+        type: string
+        default: '❌ **PR Automatically Closed**: Workflows have not been executed on your fork.'
+      post-comment:
+        required: false
+        type: boolean
+        default: true
+      allowed-authors:
+        required: false
+        type: string
+        default: ''
+      max-prs-per-day:
+        required: false
+        type: string
+        default: '-1'
+      require-associated-issue:
+        required: false
+        type: boolean
+        default: false
+      pr-body-content:
+        required: false
+        type: string
+        default: 'Automated test PR body'
+      enable-fork-actions:
+        required: false
+        type: boolean
+        default: false
+      expected-pr-open:
+        required: true
+        type: boolean
+      expected-comment-added:
+        required: true
+        type: boolean
+      cleanup-fork:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      MACHINE_ACCOUNT_PAT:
+        required: true
+      TARGET_REPO_PAT:
+        required: true
+
+jobs:
+  run-integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Update Target Repo Workflow Configuration
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.TARGET_REPO_PAT }}
+          script: |
+            const updateWorkflow = require('./.github/test_scripts/update-workflow.js');
+            await updateWorkflow({ github, inputs: ${{ toJson(inputs) }} });
+
+      - name: Fork, Commit, and Raise PR
+        id: create-pr
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.MACHINE_ACCOUNT_PAT }}
+          script: |
+            const createPrFork = require('./.github/test_scripts/create-pr-fork.js');
+            await createPrFork({ github, core, inputs: ${{ toJson(inputs) }} });
+
+      - name: Wait for Action Execution and Verify Assertions
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.TARGET_REPO_PAT }}
+          script: |
+            const verifyAssertions = require('./.github/test_scripts/verify-assertions.js');
+            const prNumber = parseInt('${{ steps.create-pr.outputs.pr_number }}', 10);
+            await verifyAssertions({ github, core, inputs: ${{ toJson(inputs) }}, prNumber });
+
+      - name: Cleanup Fork Repository
+        if: always() && inputs.cleanup-fork == true && steps.create-pr.outputs.fork_owner != ''
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ secrets.MACHINE_ACCOUNT_PAT }}
+          script: |
+            const cleanupFork = require('./.github/test_scripts/cleanup-fork.js');
+            const forkOwner = '${{ steps.create-pr.outputs.fork_owner }}';
+            const forkRepo = '${{ steps.create-pr.outputs.fork_repo }}';
+            await cleanupFork({ github, forkOwner, forkRepo });

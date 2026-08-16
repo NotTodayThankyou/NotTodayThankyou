@@ -29,5 +29,4 @@ jobs:
 ```
 
 ## AI Declaration
-- I have used Gemini extensively, but in my defence, ironically (given the main use case I have in mind...).
-- The Github APIs are undeniably incredible, but I am not itching to write any more JS embedded in Yaml than I need to.
+- I have used Gemini extensively, but ironically.  The main use case for this Action, is to close spam PRs from LLMs.
