@@ -31,17 +31,24 @@ jobs:
               core.setFailed(`Failed to verify org membership for ${username}: ${err.message}`);
             }
 
-  run_tests:
+  test:
     needs: user_authorization_check
     strategy:
       matrix:
         max-parallel: [1]
         settings: 
+          # test PR that didn't run workflows gets closed
+          - allowed-authors: ''
+            enable-fork-actions: false
+            expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
           # test allowlist shortcut
           - allowed-authors: 'JamesParrott-machine-account'
+            enable-fork-actions: false
             expected-pr-open: true
             expected-comment-added: false
-            cleanup-fork: false
+            cleanup-fork: true
         
       
     uses: ./.github/workflows/parametrisable_test.yml
@@ -49,6 +56,7 @@ jobs:
       target-owner: 'NotTodayThankyou'
       target-repo: '__dummy_test_repo'
       allowed-authors: ${{ matrix.settings.allowed-authors }}
+      enable-fork-actions: ${{ matrix.settings.enable-fork-actions }}
       expected-pr-open: ${{ matrix.settings.expected-pr-open }}
       expected-comment-added: ${{ matrix.settings.expected-comment-added }}
       cleanup-fork: ${{ matrix.settings.cleanup-fork }}
