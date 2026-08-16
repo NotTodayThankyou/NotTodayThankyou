@@ -89,7 +89,7 @@ jobs:
             }
             enable-fork-actions: true
             expected-pr-open: true
-            expected-comment-added: true
+            expected-comment-added: false
             cleanup-fork: true
 
         
