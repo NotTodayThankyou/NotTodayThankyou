@@ -27,12 +27,11 @@ inputs:
     required: false
     default: 'false'
 
+  github-token:
+    description: 'GitHub token with permissions to read/write issues and pull requests'
+    required: false
+    default: ${{ github.token }}
+
 runs:
-  using: 'composite'
-  steps:
-    - name: Run PR Verification Logic
-      uses: actions/github-script@v9
-      with:
-        script: |
-          const runVerification = require('${{ github.action_path }}/NotTodayThankyou.js');
-          await runVerification({ github, context, core, inputs: ${{ toJson(inputs) }} });
+  using: 'node20'
+  main: 'dist/index.js'
