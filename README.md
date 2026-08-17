@@ -7,8 +7,7 @@ Close PRs e.g.:
  - whose authors simply have made far too many PRs recently (the limit is configurable),
  - that don't refer to an Issue.
 
-The Action has been fully tested end to end, and with real user accounts (a machine account) and 
-with real repos and forks.  If there are any gaps, please raise an Issue.
+The Action has been fully tested end to end, and with actual user accounts, repos, and forks.  
 
 ## Quick start
 
@@ -71,7 +70,7 @@ The count includes PRs against all Github repos that the API will tell us about.
 
 
 #### Close PRs with a custom message.
-Providing further messages to an Agent, simply feeds more prompts into the LLM.
+The message body of the comment added to PRs that are closed, can be customised.
 ```yml
     steps:
       - uses: NotTodayThankyou/NotTodayThankyou@v1
@@ -87,11 +86,10 @@ To continue welcoming new contributers to your project, we recommend
 use of this Action, is accompanied by clearly laid out rules,
 e.g. in CONTRIBUTING.md.
 
-The message posted in a comment before PRs are closed can be customised.
 
 
 ### AI Declaration.
-I've used Google Gemini extensively (in chatbot mode).  And I claim, carefully.  
+Gemini was used extensively (in chatbot mode), and Deepseek, ChatGPT and Claude were all consulted.  
 I hope even the strongest objectors to AI generated code, would allow an exception for
 using AI tools, to help manage spam PRs.
 
@@ -99,8 +97,16 @@ using AI tools, to help manage spam PRs.
 ### Security considerations.  
  - Write permissions to Pull Requests are required to close Pull Requests.  
  - Workflows calling NotTodayThankyou, cannot use the `on: pull_request` trigger, as
-its default `secrets.GITHUB_TOKEN` cannot be given write access. E.g. the `on: pull_request_target:` 
+its default `secrets.GITHUB_TOKEN` cannot be given write access[^1]. E.g. the `on: pull_request_target:` 
 trigger must be used instead.  As per the [special security considerations](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target) for that trigger, it must 
 be ensured that nothing else in the workflow running from this trigger runs untrusted code in a PR.
  - The code actually in the PR is never checked out by NotTodayThankyou, let alone run. 
- - This Action only makes calls to Github's APIs. 
+ - This Action only makes calls to Github's APIs.
+
+#### Vulnerability disclosure
+Please send reports to [James](https://github.com/JamesParrott).  Any grace period at all that you can grant 
+is much appreciated.  But if you prefer to post an issue on this repo, that's fine too, users deserve to be told.
+No bug bounty, but full credit will be given.
+
+ [^1]: Whatever the reason may be, running NotTodayThankyou with `on: pull_request` 
+ [doesn't](https://github.com/NotTodayThankyou/NotTodayThankyou/actions?query=branch%3ATest-on-pull-request) [work](https://github.com/NotTodayThankyou/NotTodayThankyou/blob/Test-on-pull-request/errors.txt).
