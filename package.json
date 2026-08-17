@@ -1,0 +1,12 @@
+{
+  "name": "NotTodayThankyou",
+  "version": "1.0.0",
+  "description": "Automatically closes PRs that fail selected tests and checks.  ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"The tests are run in Github Actions - the main entry point is ./github/workflows/test_matrix.yml\" && exit 1"
+  },
+  "keywords": [],
+  "author": "James Parrott",
+  "license": "MIT"
+}
