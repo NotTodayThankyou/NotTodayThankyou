@@ -16,7 +16,7 @@ with real repos and forks.  If there are any gaps, please raise an Issue.
 name: Close PRs from forks that didn't run workflows (unless author is a previous contributor)
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened]
     branches:
       - main
@@ -98,9 +98,5 @@ using AI tools, to help manage spam PRs.
 
 ### Security considerations.  
  - Write permissions to Pull Requests are required to close Pull Requests.  
- - Workflows calling NotTodayThankyou, cannot use the `on: pull_request` trigger, as
-its default `secrets.GITHUB_TOKEN` cannot be given write access. E.g. the `on: pull_request_target:` 
-trigger must be used instead.  As per the [special security considerations](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target) for that trigger, it must 
-be ensured that nothing else in the workflow running from this trigger runs untrusted code in a PR.
  - The code actually in the PR is never checked out by NotTodayThankyou, let alone run. 
  - This Action only makes calls to Github's APIs. 

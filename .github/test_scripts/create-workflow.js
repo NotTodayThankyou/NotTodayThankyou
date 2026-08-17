@@ -24,7 +24,7 @@ module.exports = async ({ github, inputs }) => {
   const updatedWorkflowContent = `name: Close PRs from Forks that didn't run CI
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, reopened]
     branches:
       - main
@@ -36,7 +36,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: NotTodayThankyou/NotTodayThankyou@main
+      - uses: NotTodayThankyou/NotTodayThankyou@Test-on-pull-request
         ${withBlock}
 `;
 
