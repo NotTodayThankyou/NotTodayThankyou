@@ -87,11 +87,10 @@ use of this Action, is accompanied by clearly laid out rules,
 e.g. in CONTRIBUTING.md.
 
 
-
 ### AI Declaration.
 Gemini was used extensively (in chatbot mode), and Deepseek, ChatGPT and Claude were all consulted.  
-I hope even the strongest objectors to AI generated code, would allow an exception for
-using AI tools, to help manage spam PRs.
+I hope even the strongest objectors to AI generated code, would forgive using AI tools, to 
+help manage spam PRs.
 
 
 ### Security considerations.  
@@ -107,6 +106,24 @@ be ensured that nothing else in the workflow running from this trigger runs untr
 Please send reports to [James](https://github.com/JamesParrott).  Any grace period at all that you can grant 
 is much appreciated.  But if you prefer to post an issue on this repo, that's fine too, users deserve to be told.
 No bug bounty, but full credit will be given.
+
+### Development
+
+#### Testing
+*"Why can't I run the tests?"*
+The tests are run with real repos and a real user account (e.g. a "machine account"), so 
+require a classic token and a couple of PATS: 
+i) to push a workflow to a test repo, that runs the code under test
+ii) to fork the repo, make a branch, create a commit, raise a PR (classic token required for this step),
+and so trigger the workflow that runs the code under test.
+iii) Retrieve the open/closed status and number of comments on the raised PR.
+iv) Delete the fork (closes the PR if it was open)
+v) Delete the test workflow (avoiding test pollution, should step i) ever silently fail)
+
+The tests on this repo are only run if a simple check on the account that instigated them is passed (in the `user_authorization_check` job).
+James is happy to explain further how to reproduce a complete test setup for yourself.  But he doesn't wish 
+to exceed Github's fair use limits, and does not want to allow others to run workflows with access to secret
+tokens, that even if tightly scoped with minimum privileges, allow control over his accounts.
 
  [^1]: Whatever the reason may be, running NotTodayThankyou with `on: pull_request` 
  [doesn't](https://github.com/NotTodayThankyou/NotTodayThankyou/actions?query=branch%3ATest-on-pull-request) [work](https://github.com/NotTodayThankyou/NotTodayThankyou/blob/Test-on-pull-request/errors.txt).
