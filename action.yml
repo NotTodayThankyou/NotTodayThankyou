@@ -28,11 +28,5 @@ inputs:
     default: 'false'
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Run PR Verification Logic
-      uses: actions/github-script@v9
-      with:
-        script: |
-          const runVerification = require('${{ github.action_path }}/NotTodayThankyou.js');
-          await runVerification({ github, context, core, inputs: ${{ toJson(inputs) }} });
+  using: 'node24'
+  main: 'NotTodayThankyou.js'
