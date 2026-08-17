@@ -8,5 +8,12 @@
   },
   "keywords": [],
   "author": "James Parrott",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@vercel/ncc": "^0.45.0"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1"
+  }
 }
