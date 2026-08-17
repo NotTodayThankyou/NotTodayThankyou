@@ -1,5 +1,5 @@
 name: 'NotTodayThankyou'
-description: 'Closes the PR triggering the calling workflow, unless it passes various checks.'
+description: 'Automatically closes PRs that fail selected tests and checks'
 
 inputs:
   close-message:
