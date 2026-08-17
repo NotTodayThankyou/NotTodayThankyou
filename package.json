@@ -4,7 +4,8 @@
   "description": "Automatically closes PRs that fail selected tests and checks.  ",
   "main": "dist/index.js",
   "scripts": {
-    "build": "pnpm esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js",
+    "build": "pnpm tsc --outDir dist",
+    "bundle": "pnpm esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js",
     "test": "echo \"The tests are run in Github Actions - the main entry point is ./github/workflows/test_matrix.yml\" && exit 1"
   },
   "keywords": [],
