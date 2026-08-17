@@ -2,6 +2,11 @@ name: 'NotTodayThankyou'
 description: 'Automatically closes PRs that fail selected tests and checks'
 
 inputs:
+  github-token:
+    description: 'GitHub token used for API requests'
+    required: false
+    default: ${{ github.token }}
+
   close-message:
     description: 'Custom message to post on the PR when automatically closing it for missing fork CI'
     required: false
