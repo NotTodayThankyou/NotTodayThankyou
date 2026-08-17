@@ -1,0 +1,92 @@
+On __dummy_repo:
+
+@JamesParrott-machine-accountJamesParrott-machine-account
+opened
+#116
+JamesParrott-machine-account:test-branch-1786956928473
+Status Action required
+Total duration –
+Artifacts –
+This workflow is awaiting approval from a maintainer in #116 
+
+
+On __dummy_repo_for_machine_account_to_be_contributor_of:
+
+Run NotTodayThankyou/NotTodayThankyou@Test-on-pull-request
+  with:
+    close-message: ❌ **PR Automatically Closed**: Workflows have not been executed on your fork. Please enable GitHub Actions on your fork, run your test suite, and reopen this PR.
+    post-comment: true
+    max-prs-per-day: -1
+    require-associated-issue: false
+
+      
+    
+Run PR Verification Logic
+1s
+Run actions/github-script@v9
+  GET /repos/JamesParrott-machine-account/__dummy_repo_for_machine_account_to_be_contributor_of/actions/runs?head_sha=54311ad6923f81bf852e441cd2efc4d52324c50a - 404 with id 1421:197EEC:8CD1DFB:93C14B3:6A82CC76 in 273ms
+  ❌ Check Failed: No workflow runs found on JamesParrott-machine-account/__dummy_repo_for_machine_account_to_be_contributor_of for commit 54311ad6923f81bf852e441cd2efc4d52324c50a.
+  POST /repos/NotTodayThankyou/__dummy_repo_for_machine_account_to_be_contributor_of/issues/6/comments - 403 with id 1420:1404CF:8C65778:93560A8:6A82CC76 in 215ms
+  RequestError [HttpError]: Resource not accessible by integration - https://docs.github.com/rest/issues/comments#create-an-issue-comment
+      at fetchWrapper (/home/runner/work/_actions/actions/github-script/v9/dist/index.js:61509:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async module.exports (/home/runner/work/_actions/NotTodayThankyou/NotTodayThankyou/Test-on-pull-request/NotTodayThankyou.js:165:5)
+      at async eval (eval at callAsyncFunction (/home/runner/work/_actions/actions/github-script/v9/dist/index.js:64949:16), <anonymous>:4:1)
+      at async main (/home/runner/work/_actions/actions/github-script/v9/dist/index.js:65100:20) {
+    status: 403,
+    request: {
+      method: 'POST',
+      url: 'https://api.github.com/repos/NotTodayThankyou/__dummy_repo_for_machine_account_to_be_contributor_of/issues/6/comments',
+      headers: {
+        accept: 'application/vnd.github.v3+json',
+        'user-agent': 'actions/github-script actions_orchestration_id/c315b534-fa99-4e0b-b30c-90a690fd36b6.verify.__default octokit-core.js/7.0.6 Node.js/24',
+        authorization: 'bearer [REDACTED]',
+        'content-type': 'application/json; charset=utf-8'
+      },
+      body: [Object: null prototype] {
+        body: '❌ **PR Automatically Closed**: Workflows have not been executed on your fork. Please enable GitHub Actions on your fork, run your test suite, and reopen this PR.'
+      },
+      request: {
+        agent: [Agent],
+        fetch: [Function: proxyFetch],
+        hook: [Function: bound bound register]
+      }
+    },
+    response: {
+      url: 'https://api.github.com/repos/NotTodayThankyou/__dummy_repo_for_machine_account_to_be_contributor_of/issues/6/comments',
+      status: 403,
+      headers: {
+        'access-control-allow-origin': '*',
+        'access-control-expose-headers': 'ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning',
+        'content-encoding': 'gzip',
+        'content-security-policy': "default-src 'none'",
+        'content-type': 'application/json; charset=utf-8',
+        date: 'Mon, 17 Aug 2026 08:55:18 GMT',
+        'referrer-policy': 'origin-when-cross-origin, strict-origin-when-cross-origin',
+        server: 'github.com',
+        'strict-transport-security': 'max-age=31536000; includeSubdomains; preload',
+        'transfer-encoding': 'chunked',
+        vary: 'Accept-Encoding, Accept, X-Requested-With',
+        'x-accepted-github-permissions': 'issues=write; pull_requests=write',
+        'x-content-type-options': 'nosniff',
+        'x-frame-options': 'deny',
+        'x-github-api-version-selected': '2022-11-28',
+        'x-github-edge-region': 'sea',
+        'x-github-media-type': 'github.v3; format=json',
+        'x-github-request-id': '1420:1404CF:8C65778:93560A8:6A82CC76',
+        'x-ratelimit-limit': '5000',
+        'x-ratelimit-remaining': '4994',
+        'x-ratelimit-reset': '1786959512',
+        'x-ratelimit-resource': 'core',
+        'x-ratelimit-used': '6',
+        'x-xss-protection': '0'
+      },
+      data: {
+        message: 'Resource not accessible by integration',
+        documentation_url: 'https://docs.github.com/rest/issues/comments#create-an-issue-comment',
+        status: '403'
+      }
+    },
+    [cause]: undefined
+  }
+  Error: Unhandled error: HttpError: Resource not accessible by integration - https://docs.github.com/rest/issues/comments#create-an-issue-comment
