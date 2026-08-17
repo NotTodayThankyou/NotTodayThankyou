@@ -1,6 +1,10 @@
 name: 'NotTodayThankyou'
 description: 'Automatically closes PRs that fail selected tests and checks'
 
+branding:
+  icon: 'shield'  # Name of the icon from the Feather set
+  color: 'purple'
+
 inputs:
   close-message:
     description: 'Custom message to post on the PR when automatically closing it for missing fork CI'
