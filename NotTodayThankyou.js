@@ -79,27 +79,34 @@ module.exports = async ({ github, context, core, inputs }) => {
     console.log(`✅ Check Passed: Found ${workflowRuns.total_count} workflow run(s) on ${headRepoFullName}.`);
   }
 
-  // =========================================================================
-  // CHECK (ii): RATE LIMITING / MAXIMUM PRs CREATED IN LAST 24 HOURS
-  // =========================================================================
-  const maxPrs = parseInt(inputs['max-prs-per-day'], 10);
-  if (maxPrs >= 0) {
-    try {
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: searchResults } = await github.rest.search.issuesAndPullRequests({
-        q: `type:pr author:${author} created:>${oneDayAgo}`
-      });
+  // ================================================================================
+  // CHECK (ii): RATE LIMITING / MAXIMUM PRs CREATED IN LAST 24 HOURS / WEEK / MONTH
+  // ================================================================================
+  const keysTimeSpansAndMessages = [
+    ['max-prs-per-day', 24, '24 hours'],
+    ['max-prs-per-week', 24*7, '7 days'],
+    ['max-prs-per-month', 24*30, '30 days']
+  ];
+  for (const [key, timeSpanHours, timeSpanDesc] of keysTimeSpansAndMessages) {
+    const maxPrs = parseInt(inputs[key], 10);
+    if (maxPrs >= 0) {
+      try {
+        const oneDayAgo = new Date(Date.now() - timeSpanHours * 60 * 60 * 1000).toISOString();
+        const { data: searchResults } = await github.rest.search.issuesAndPullRequests({
+          q: `type:pr author:${author} created:>${oneDayAgo}`
+        });
 
-      if (searchResults.total_count > maxPrs) {
-        failCheck(
-          `❌ **PR Closed**: You have opened ${searchResults.total_count} PRs across GitHub in the last 24 hours, exceeding the daily threshold of ${maxPrs}.`,
-          `Author '${author}' exceeded rate limit (${searchResults.total_count}/${maxPrs} PRs created in 24h).`
-        );
-      } else {
-        console.log(`✅ Check Passed: Author '${author}' has created ${searchResults.total_count}/${maxPrs} PRs in 24h.`);
+        if (searchResults.total_count > maxPrs) {
+          failCheck(
+            `❌ **PR Closed**: You have opened ${searchResults.total_count} PRs across GitHub in the last ${timeSpanDesc}, exceeding the threshold of ${maxPrs}.`,
+            `Author '${author}' exceeded rate limit (${searchResults.total_count}/${maxPrs} PRs created in the last ${timeSpanHours}h).`
+          );
+        } else {
+          console.log(`✅ Check Passed: Author '${author}' has created ${searchResults.total_count}/${maxPrs} PRs in ${timeSpanHours}h.`);
+        }
+      } catch (err) {
+        console.log(`⚠️ Failed to query global PR rate limit search (${err.message}).`);
       }
-    } catch (err) {
-      console.log(`⚠️ Failed to query global PR rate limit search (${err.message}).`);
     }
   }
 
