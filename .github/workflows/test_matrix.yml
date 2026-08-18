@@ -74,7 +74,7 @@ jobs:
             cleanup-fork: true
 
 
-          - name: Test PR closed if max number of PRs set, and exceeded
+          - name: Test PR closed if max number of PRs per day set, and exceeded
             action-inputs: {
               max-prs-per-day: "0",
             }
@@ -83,9 +83,47 @@ jobs:
             expected-comment-added: true
             cleanup-fork: true
 
-          - name: Test PR left open if max number of PRs set, but not exceeded
+          - name: Test PR left open if max number of PRs per day set, but not exceeded
             action-inputs: {
               max-prs-per-day: "86400", # Number of seconds in 24 hours
+            }
+            enable-fork-actions: true
+            expected-pr-open: true
+            expected-comment-added: false
+            cleanup-fork: true
+
+
+
+          - name: Test PR closed if max number of PRs per week set, and exceeded
+            action-inputs: {
+              max-prs-per-day: "0",
+            }
+            enable-fork-actions: true
+            expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
+
+          - name: Test PR left open if max number of PRs per week set, but not exceeded
+            action-inputs: {
+              max-prs-per-day: "604800",
+            }
+            enable-fork-actions: true
+            expected-pr-open: true
+            expected-comment-added: false
+            cleanup-fork: true
+
+          - name: Test PR closed if max number of PRs per month set, and exceeded
+            action-inputs: {
+              max-prs-per-day: "0",
+            }
+            enable-fork-actions: true
+            expected-pr-open: false
+            expected-comment-added: true
+            cleanup-fork: true
+
+          - name: Test PR left open if max number of PRs per month set, but not exceeded
+            action-inputs: {
+              max-prs-per-day: "2592000",
             }
             enable-fork-actions: true
             expected-pr-open: true

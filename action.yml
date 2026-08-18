@@ -2,7 +2,7 @@ name: 'NotTodayThankyou'
 description: 'Automatically closes PRs that fail selected tests and checks'
 
 branding:
-  icon: 'shield'  # Name of the icon from the Feather set
+  icon: 'shield'
   color: 'purple'
 
 inputs:
@@ -23,6 +23,16 @@ inputs:
 
   max-prs-per-day:
     description: 'Maximum PRs created by author across GitHub in the last 24 hours before closing (-1 to disable)'
+    required: false
+    default: '-1'
+
+  max-prs-per-week:
+    description: 'Maximum PRs created by author across GitHub in the last week before closing (-1 to disable)'
+    required: false
+    default: '-1'
+
+  max-prs-per-month:
+    description: 'Maximum PRs created by author across GitHub in the last month before closing (-1 to disable)'
     required: false
     default: '-1'
 

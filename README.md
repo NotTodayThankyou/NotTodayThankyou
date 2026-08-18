@@ -30,9 +30,9 @@ jobs:
       - uses: NotTodayThankyou/NotTodayThankyou@v1
 ```
 
-### Examples
+## Examples
 PRs from previous contributors are never closed. 
-#### Allow list
+### Allow list
 ```yml
     steps:
       - uses: NotTodayThankyou/NotTodayThankyou@v1
@@ -40,7 +40,7 @@ PRs from previous contributors are never closed.
           allowed-authors: "Author_1, Author_2" # Comma separated list.
 ```
 
-#### Close PRs with no message.
+### Close PRs with no message.
 Providing further messages to an Agent, simply feeds more prompts into the LLM.
 ```yml
     steps:
@@ -49,7 +49,7 @@ Providing further messages to an Agent, simply feeds more prompts into the LLM.
           post-comment: "false"
 ```
 
-#### Close PRs with no associated issue.
+### Close PRs with no associated issue.
 Neither PRs that close an issue, nor PRs that only refer to one, are closed.  
 The API is polled, so the issues must exist, to avoid PR closure. 
 ```yml
@@ -59,17 +59,19 @@ The API is polled, so the issues must exist, to avoid PR closure.
           require-associated-issue: "true"
 ```
 
-#### Close PRs from authors who've recently created more PRs than some limit.
+### Close PRs from authors who've recently created more PRs than some limit.
 The count includes PRs against all Github repos that the API will tell us about.
 ```yml
     steps:
       - uses: NotTodayThankyou/NotTodayThankyou@v1
         with:
           max-prs-per-day: 30
+          max-prs-per-week: 70
+          max-prs-per-day: 120
 ```
 
 
-#### Close PRs with a custom message.
+### Close PRs with a custom message.
 The message body of the comment added to PRs that are closed, can be customised.
 ```yml
     steps:
@@ -81,35 +83,45 @@ The message body of the comment added to PRs that are closed, can be customised.
 All selected checks must be passed to avoid the PR being closed, except the
 PR author being a previous contributor, or on the Allow List.
 
-### Open Source
+## Open Source
 To continue welcoming new contributers to your project, we recommend
 use of this Action, is accompanied by clearly laid out rules,
 e.g. in CONTRIBUTING.md.
 
+## Alternatives
+At the cost of an extra hoop (or two) new contributors must jump through, we would point
+out that Open Source Projects that require 
+[CLAs](https://en.wikipedia.org/wiki/Contributor_license_agreement) or Contributor 
+Agreements (e.g. [Eclipe's](https://www.eclipse.org/legal/eca/)) receive far fewer 
+nuisance PRs.  Perhaps if even only a (more reasonable) [Developer 
+Certificate of Origin](https://en.wikipedia.org/wiki/Developer_Certificate_of_Origin) is 
+required to be signed, this would form a similar deterrent.
 
-### AI Declaration.
+
+## AI Declaration.
 Gemini was used extensively (in chatbot mode), and Deepseek, ChatGPT and Claude were all consulted.  
 I hope even the strongest objectors to AI generated code, would forgive using AI tools, to 
 help manage spam PRs.
 
 
-### Security considerations.  
+## Security considerations.  
  - Write permissions to Pull Requests are required to close Pull Requests.  
  - Workflows calling NotTodayThankyou, cannot use the `on: pull_request` trigger, as
 its default `secrets.GITHUB_TOKEN` cannot be given write access[^1]. E.g. the `on: pull_request_target:` 
 trigger must be used instead.  As per the [special security considerations](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target) for that trigger, it must 
 be ensured that nothing else in the workflow running from this trigger runs untrusted code in a PR.
  - The code actually in the PR is never checked out by NotTodayThankyou, let alone run. 
- - This Action only makes calls to Github's APIs.
+ - This Action only makes calls to Github's APIs.  The JS code should consist solely of nice, safe
+  boring, business logic (the test code is more technically interesting).
 
-#### Vulnerability disclosure
+### Vulnerability disclosure
 Please send reports to [James](https://github.com/JamesParrott).  Any grace period at all that you can grant 
 is much appreciated.  But if you prefer to post an issue on this repo, that's fine too, users deserve to be told.
 No bug bounty, but full credit will be given.
 
-### Development
+## Development
 
-#### Testing
+### Testing
 *"Why can't I run the tests?"*
 The tests are run with real repos and a real user account (e.g. a "machine account"), so 
 require a classic token and a couple of PATS: 
@@ -124,6 +136,13 @@ The tests on this repo are only run if a simple check on the account that instig
 James is happy to explain further how to reproduce a complete test setup for yourself.  But he doesn't wish 
 to exceed Github's fair use limits, and does not want to allow others to run workflows with access to secret
 tokens, that even if tightly scoped with minimum privileges, allow control over his accounts.
+
+### Typescript
+There is an experimental branch for a Typescript version.  When the standard tools (esbuild and vercel/ncc)
+bundle Octokit, the resulting compiled JS is extremely bloated.  The current focus is on a build system 
+that e.g. simply runs the typescript compiler before each commit (even if it errors regarding the imports) 
+and adds the compiled JS to the commit, resulting in much simpler compiled JS for use with github-script.  
+Ideally, functionally equivalent to NotTodayThankyou.js currently in main, but with type bugs ruled out.
 
  [^1]: Whatever the reason may be, running NotTodayThankyou with `on: pull_request` 
  [doesn't](https://github.com/NotTodayThankyou/NotTodayThankyou/actions?query=branch%3ATest-on-pull-request) [work](https://github.com/NotTodayThankyou/NotTodayThankyou/blob/Test-on-pull-request/errors.txt).

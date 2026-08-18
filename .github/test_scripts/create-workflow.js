@@ -36,7 +36,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: NotTodayThankyou/NotTodayThankyou@main
+      - uses: NotTodayThankyou/NotTodayThankyou@weekly_and_monthly_limit
         ${withBlock}
 `;
 
