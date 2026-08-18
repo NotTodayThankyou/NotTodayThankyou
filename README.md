@@ -89,6 +89,7 @@ use of this Action, is accompanied by clearly laid out rules,
 e.g. in CONTRIBUTING.md.
 
 ## Alternatives
+### DCoEs & CLAs (Open Source)
 At the cost of an extra hoop (or two) new contributors must jump through, we would point
 out that Open Source Projects that require 
 [CLAs](https://en.wikipedia.org/wiki/Contributor_license_agreement) or Contributor 
@@ -96,7 +97,9 @@ Agreements (e.g. [Eclipe's](https://www.eclipse.org/legal/eca/)) receive far few
 nuisance PRs.  Perhaps if even only a (more reasonable) [Developer 
 Certificate of Origin](https://en.wikipedia.org/wiki/Developer_Certificate_of_Origin) is 
 required to be signed, this would form a similar deterrent.
-
+### Block Clankers
+[This tool](https://github.com/cyrisxd/block-clankers) is more popular and 
+supports block lists, but requires a Github PAT to be added to the repo's secrets.
 
 ## AI Declaration.
 Gemini was used extensively (in chatbot mode), and Deepseek, ChatGPT and Claude were all consulted.  
